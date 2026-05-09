@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cart — Anvith's Avengers</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Rajdhani:wght@400;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--gold:#e8b923;--dark:#080c14;--card-bg:#0d1421;--text:#e8e8e8;--muted:#8899aa}
+body{background:var(--dark);color:var(--text);font-family:'Rajdhani',sans-serif;min-height:100vh}
+
+nav{position:fixed;top:0;width:100%;z-index:100;background:rgba(8,12,20,0.97);backdrop-filter:blur(10px);border-bottom:1px solid rgba(232,185,35,0.2);padding:0 2rem}
+.nav-inner{max-width:1100px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;height:64px}
+.nav-logo{font-family:'Bebas Neue',sans-serif;font-size:24px;color:var(--gold);letter-spacing:3px;text-decoration:none}
+.nav-links{display:flex;gap:1.5rem;align-items:center}
+.nav-links a{color:var(--muted);text-decoration:none;font-size:13px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;transition:color 0.2s}
+.nav-links a:hover,.nav-links a.active{color:var(--gold)}
+
+.page-header{padding:7rem 2rem 3rem;text-align:center}
+.page-label{font-size:11px;letter-spacing:5px;text-transform:uppercase;color:var(--gold);margin-bottom:0.5rem}
+.page-title{font-family:'Bebas Neue',sans-serif;font-size:clamp(50px,8vw,90px);letter-spacing:3px;color:#fff}
+.page-divider{width:60px;height:2px;background:var(--gold);margin:1rem auto 0}
+
+.container{max-width:900px;margin:0 auto;padding:2rem 2rem 5rem}
+
+/* CART VIEW */
+#cartView{}
+.cart-item{display:flex;align-items:center;justify-content:space-between;padding:1.25rem;background:var(--card-bg);border:1px solid rgba(255,255,255,0.07);margin-bottom:12px;gap:1rem;opacity:0;animation:fadeUp 0.5s forwards}
+.cart-item:nth-child(1){animation-delay:0.05s}
+.cart-item:nth-child(2){animation-delay:0.1s}
+.cart-item:nth-child(3){animation-delay:0.15s}
+.cart-item:nth-child(4){animation-delay:0.2s}
+.cart-item-left{display:flex;align-items:center;gap:1rem}
+.ci-emoji{font-size:36px}
+.ci-name{font-weight:700;font-size:15px}
+.ci-hero{font-size:11px;color:var(--gold);letter-spacing:1px;text-transform:uppercase;margin-top:2px}
+.cart-item-right{display:flex;align-items:center;gap:12px;flex-shrink:0}
+.qty-btn{background:transparent;border:1px solid rgba(232,185,35,0.3);color:var(--gold);width:28px;height:28px;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;transition:all 0.15s}
+.qty-btn:hover{background:rgba(232,185,35,0.1)}
+.qty-num{font-family:'Bebas Neue',sans-serif;font-size:20px;min-width:22px;text-align:center}
+.ci-price{font-family:'Bebas Neue',sans-serif;font-size:22px;color:var(--gold);min-width:70px;text-align:right}
+.remove-btn{background:transparent;border:none;color:var(--muted);cursor:pointer;font-size:16px;padding:4px;transition:color 0.15s}
+.remove-btn:hover{color:#ef4444}
+
+.cart-empty{text-align:center;padding:5rem 1rem;color:var(--muted)}
+.cart-empty-icon{font-size:64px;margin-bottom:1rem}
+.cart-empty-title{font-family:'Bebas Neue',sans-serif;font-size:36px;letter-spacing:2px;color:#fff;margin-bottom:0.5rem}
+.cart-empty-sub{font-size:15px;margin-bottom:2rem}
+.shop-btn{display:inline-block;padding:13px 32px;background:var(--gold);color:#000;font-family:'Rajdhani',sans-serif;font-size:13px;font-weight:700;letter-spacing:2px;text-transform:uppercase;text-decoration:none;transition:all 0.2s}
+.shop-btn:hover{background:#f5cd3a}
+
+.cart-summary{background:var(--card-bg);border:1px solid rgba(255,255,255,0.07);padding:1.5rem;margin-top:8px}
+.summary-row{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.05);font-size:14px;color:var(--muted)}
+.summary-total{display:flex;justify-content:space-between;align-items:center;padding:1rem 0 0;font-size:15px;letter-spacing:1px;text-transform:uppercase;color:var(--text)}
+.total-num{font-family:'Bebas Neue',sans-serif;font-size:36px;color:var(--gold)}
+.checkout-btn{width:100%;margin-top:1rem;padding:14px;background:var(--gold);color:#000;border:none;font-family:'Rajdhani',sans-serif;font-size:15px;font-weight:700;letter-spacing:2px;text-transform:uppercase;cursor:pointer;transition:all 0.2s}
+.checkout-btn:hover{background:#f5cd3a}
+.continue-link{display:block;text-align:center;margin-top:1rem;color:var(--muted);font-size:13px;letter-spacing:1px;text-transform:uppercase;text-decoration:none;transition:color 0.2s}
+.continue-link:hover{color:var(--gold)}
+
+/* CHECKOUT VIEW */
+#checkoutView{display:none}
+.checkout-grid{display:grid;grid-template-columns:1.2fr 1fr;gap:2rem;align-items:start}
+@media(max-width:680px){.checkout-grid{grid-template-columns:1fr}}
+.checkout-title{font-family:'Bebas Neue',sans-serif;font-size:32px;letter-spacing:2px;color:#fff;margin-bottom:1.5rem}
+.form-group{margin-bottom:1rem}
+.form-label{display:block;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--gold);margin-bottom:6px}
+.form-input{width:100%;background:#080c14;border:1px solid rgba(255,255,255,0.1);color:var(--text);padding:11px 14px;font-family:'Rajdhani',sans-serif;font-size:15px;font-weight:600;outline:none;transition:border-color 0.2s}
+.form-input:focus{border-color:rgba(232,185,35,0.5)}
+.form-input::placeholder{color:#445566}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media(max-width:480px){.form-row{grid-template-columns:1fr}}
+.place-btn{width:100%;padding:14px;background:var(--gold);color:#000;border:none;font-family:'Rajdhani',sans-serif;font-size:14px;font-weight:700;letter-spacing:2px;text-transform:uppercase;cursor:pointer;transition:all 0.2s;margin-top:4px}
+.place-btn:hover{background:#f5cd3a}
+.place-btn:disabled{opacity:0.5;cursor:not-allowed}
+.back-to-cart{background:transparent;border:none;color:var(--muted);font-family:'Rajdhani',sans-serif;font-size:12px;font-weight:600;letter-spacing:1px;text-transform:uppercase;cursor:pointer;padding:10px 0;display:block;text-align:center;width:100%;transition:color 0.2s;margin-top:8px}
+.back-to-cart:hover{color:var(--gold)}
+.error-msg{color:#ff6b6b;font-size:13px;margin-bottom:10px;display:none}
+.error-msg.show{display:block}
+
+.order-panel{background:var(--card-bg);border:1px solid rgba(255,255,255,0.07);padding:1.5rem}
+.order-panel-title{font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--gold);margin-bottom:1rem}
+.order-line{display:flex;justify-content:space-between;font-size:13px;color:var(--muted);padding:6px 0;border-bottom:1px solid rgba(255,255,255,0.05)}
+.order-line span:last-child{color:var(--text);font-weight:700}
+.order-total{display:flex;justify-content:space-between;padding-top:1rem;font-size:13px;letter-spacing:1px;text-transform:uppercase}
+.order-total-num{font-family:'Bebas Neue',sans-serif;font-size:28px;color:var(--gold)}
+
+/* SUCCESS VIEW */
+#successView{display:none;text-align:center;padding:3rem 1rem}
+.success-icon{font-size:72px;margin-bottom:1rem;animation:pop 0.4s ease}
+.success-title{font-family:'Bebas Neue',sans-serif;font-size:48px;letter-spacing:3px;color:var(--gold);margin-bottom:0.5rem}
+.success-sub{color:var(--muted);font-size:16px;line-height:1.7;margin-bottom:1rem}
+.order-id-box{font-size:12px;letter-spacing:2px;color:var(--gold);padding:10px;border:1px solid rgba(232,185,35,0.2);margin:1rem auto;max-width:400px}
+.home-btn{display:inline-block;margin-top:1.5rem;padding:13px 36px;background:var(--gold);color:#000;font-family:'Rajdhani',sans-serif;font-size:13px;font-weight:700;letter-spacing:2px;text-transform:uppercase;text-decoration:none;transition:all 0.2s}
+.home-btn:hover{background:#f5cd3a}
+
+footer{text-align:center;padding:2rem;border-top:1px solid rgba(232,185,35,0.15);background:#050810}
+.footer-text{font-size:12px;color:var(--muted);letter-spacing:2px}
+
+@keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+@keyframes pop{0%{transform:scale(0.5)}70%{transform:scale(1.15)}100%{transform:scale(1)}}
+</style>
+</head>
+<body>
+<nav>
+  <div class="nav-inner">
+    <a href="index.html" class="nav-logo">⚡ Anvith's Avengers</a>
+    <div class="nav-links">
+      <a href="heroes.html">Heroes</a>
+      <a href="about.html">About</a>
+      <a href="merch.html">Merch</a>
+      <a href="contact.html">Contact</a>
+      <a href="cart.html" class="active">🛒 Cart</a>
+    </div>
+  </div>
+</nav>
+
+<div class="page-header">
+  <div class="page-label">Your Selection</div>
+  <div class="page-title">Cart</div>
+  <div class="page-divider"></div>
+</div>
+
+<div class="container">
+
+  <!-- CART VIEW -->
+  <div id="cartView"></div>
+
+  <!-- CHECKOUT VIEW -->
+  <div id="checkoutView">
+    <div class="checkout-grid">
+      <div>
+        <div class="checkout-title">Checkout</div>
+        <div class="form-row">
+          <div class="form-group"><label class="form-label">First Name</label><input class="form-input" id="firstName" placeholder="Tony"></div>
+          <div class="form-group"><label class="form-label">Last Name</label><input class="form-input" id="lastName" placeholder="Stark"></div>
+        </div>
+        <div class="form-group"><label class="form-label">Email Address</label><input class="form-input" id="email" type="email" placeholder="tony@starkindustries.com"></div>
+        <div class="error-msg" id="errorMsg"></div>
+        <button class="place-btn" id="placeBtn" onclick="placeOrder()">⚡ Place Order</button>
+        <button class="back-to-cart" onclick="showCart()">← Back to Cart</button>
+      </div>
+      <div class="order-panel">
+        <div class="order-panel-title">Order Summary</div>
+        <div id="orderLines"></div>
+        <div class="order-total"><span>Total</span><span class="order-total-num" id="orderTotal">$0</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SUCCESS VIEW -->
+  <div id="successView">
+    <div class="success-icon">✅</div>
+    <div class="success-title">Order Confirmed!</div>
+    <div class="success-sub">Your Avengers gear is on its way, hero.<br>Check your email for details.</div>
+    <div class="order-id-box" id="orderIdBox"></div>
+    <a href="merch.html" class="home-btn">← Continue Shopping</a>
+  </div>
+
+</div>
+
+<footer><div class="footer-text">© 2026 Anvith's Avengers · Earth's Mightiest Heroes</div></footer>
+
+<script>
+const SUPABASE_URL  = 'https://dxhjbvvcdjojwliqureq.supabase.co';
+const SUPABASE_ANON = 'sb_publishable_h0epQbKfQkgkRY_8jqpTTg_Amq-B92a';
+const { createClient } = supabase;
+const db = createClient(SUPABASE_URL, SUPABASE_ANON);
+
+let cart = JSON.parse(localStorage.getItem('avengers_cart') || '[]');
+
+function getTotal() { return cart.reduce((s,i) => s + i.price * i.qty, 0); }
+
+function removeFromCart(id) {
+  cart = cart.filter(i => i.id !== id);
+  save(); renderCart();
+}
+function changeQty(id, delta) {
+  const item = cart.find(i => i.id === id);
+  if (!item) return;
+  item.qty += delta;
+  if (item.qty <= 0) cart = cart.filter(i => i.id !== id);
+  save(); renderCart();
+}
+function save() { localStorage.setItem('avengers_cart', JSON.stringify(cart)); }
+
+function renderCart() {
+  const el = document.getElementById('cartView');
+  if (!cart.length) {
+    el.innerHTML = `<div class="cart-empty">
+      <div class="cart-empty-icon">🛒</div>
+      <div class="cart-empty-title">Cart is Empty</div>
+      <div class="cart-empty-sub">Go grab some gear, soldier.</div>
+      <a href="merch.html" class="shop-btn">Shop Merch →</a>
+    </div>`;
+    return;
+  }
+
+  const items = cart.map((item, i) => `
+    <div class="cart-item" style="animation-delay:${i*0.05}s">
+      <div class="cart-item-left">
+        <div class="ci-emoji">${item.emoji}</div>
+        <div><div class="ci-name">${item.name}</div><div class="ci-hero">${item.hero}</div></div>
+      </div>
+      <div class="cart-item-right">
+        <button class="qty-btn" onclick="changeQty('${item.id}', -1)">−</button>
+        <span class="qty-num">${item.qty}</span>
+        <button class="qty-btn" onclick="changeQty('${item.id}', 1)">+</button>
+        <span class="ci-price">$${(item.price * item.qty).toFixed(2)}</span>
+        <button class="remove-btn" onclick="removeFromCart('${item.id}')">✕</button>
+      </div>
+    </div>
+  `).join('');
+
+  const subtotal = getTotal();
+  const shipping = subtotal > 100 ? 0 : 9.99;
+  const total = subtotal + shipping;
+
+  el.innerHTML = items + `
+    <div class="cart-summary">
+      <div class="summary-row"><span>Subtotal</span><span>$${subtotal.toFixed(2)}</span></div>
+      <div class="summary-row"><span>Shipping</span><span>${shipping === 0 ? 'Free 🎉' : '$' + shipping.toFixed(2)}</span></div>
+      <div class="summary-total"><span>Total</span><span class="total-num">$${total.toFixed(2)}</span></div>
+      <button class="checkout-btn" onclick="showCheckout()">Proceed to Checkout →</button>
+      <a href="merch.html" class="continue-link">← Continue Shopping</a>
+    </div>
+  `;
+}
+
+function showCart() {
+  document.getElementById('cartView').style.display = 'block';
+  document.getElementById('checkoutView').style.display = 'none';
+  document.getElementById('successView').style.display = 'none';
+  renderCart();
+}
+
+function showCheckout() {
+  if (!cart.length) return;
+  document.getElementById('cartView').style.display = 'none';
+  document.getElementById('checkoutView').style.display = 'block';
+  document.getElementById('successView').style.display = 'none';
+  document.getElementById('errorMsg').classList.remove('show');
+
+  const lines = cart.map(i => `
+    <div class="order-line">
+      <span>${i.emoji} ${i.name} × ${i.qty}</span>
+      <span>$${(i.price * i.qty).toFixed(2)}</span>
+    </div>`).join('');
+  document.getElementById('orderLines').innerHTML = lines;
+  document.getElementById('orderTotal').textContent = '$' + getTotal().toFixed(2);
+}
+
+async function placeOrder() {
+  const firstName = document.getElementById('firstName').value.trim();
+  const lastName  = document.getElementById('lastName').value.trim();
+  const email     = document.getElementById('email').value.trim();
+  const errorEl   = document.getElementById('errorMsg');
+  const btn       = document.getElementById('placeBtn');
+
+  errorEl.classList.remove('show');
+
+  if (!firstName || !lastName || !email) {
+    errorEl.textContent = '⚠ Please fill in all fields.';
+    errorEl.classList.add('show'); return;
+  }
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    errorEl.textContent = '⚠ Please enter a valid email.';
+    errorEl.classList.add('show'); return;
+  }
+
+  btn.disabled = true; btn.textContent = 'Placing Order...';
+
+  const { data, error } = await db.from('orders').insert([{
+    customer_name:  firstName + ' ' + lastName,
+    customer_email: email,
+    items: cart.map(i => ({ product_id: i.id, name: i.name, price: i.price, qty: i.qty })),
+    total: getTotal(),
+    status: 'pending'
+  }]).select();
+
+  btn.disabled = false; btn.textContent = '⚡ Place Order';
+
+  if (error) {
+    console.error(error);
+    errorEl.textContent = '⚠ Could not place order. Please try again.';
+    errorEl.classList.add('show'); return;
+  }
+
+  const orderId = data?.[0]?.id || 'N/A';
+  document.getElementById('orderIdBox').textContent = 'Order ID: ' + orderId;
+  document.getElementById('checkoutView').style.display = 'none';
+  document.getElementById('successView').style.display = 'block';
+
+  localStorage.removeItem('avengers_cart');
+  cart = [];
+}
+
+// Init
+showCart();
+</script>
+</body>
+</html>
