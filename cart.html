@@ -92,7 +92,12 @@ nav{position:fixed;top:0;width:100%;z-index:100;background:rgba(8,12,20,0.97);ba
 .success-icon{font-size:72px;margin-bottom:1rem;animation:pop 0.4s ease}
 .success-title{font-family:'Bebas Neue',sans-serif;font-size:48px;letter-spacing:3px;color:var(--gold);margin-bottom:0.5rem}
 .success-sub{color:var(--muted);font-size:16px;line-height:1.7;margin-bottom:1rem}
-.order-id-box{font-size:12px;letter-spacing:2px;color:var(--gold);padding:10px;border:1px solid rgba(232,185,35,0.2);margin:1rem auto;max-width:400px}
+.receipt-box{font-size:13px;color:var(--text);padding:1.25rem;border:1px solid rgba(232,185,35,0.25);background:rgba(232,185,35,0.04);margin:1.25rem auto;max-width:380px;text-align:left}
+.receipt-row{display:flex;justify-content:space-between;align-items:center;padding:6px 0}
+.receipt-row + .receipt-row{border-top:1px solid rgba(255,255,255,0.06)}
+.receipt-label{font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted)}
+.receipt-val{font-weight:700;letter-spacing:0.5px}
+.receipt-val.txn{color:var(--gold);font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:1px}
 .home-btn{display:inline-block;margin-top:1.5rem;padding:13px 36px;background:var(--gold);color:#000;font-family:'Rajdhani',sans-serif;font-size:13px;font-weight:700;letter-spacing:2px;text-transform:uppercase;text-decoration:none;transition:all 0.2s}
 .home-btn:hover{background:#f5cd3a}
 
@@ -153,9 +158,9 @@ footer{text-align:center;padding:2rem;border-top:1px solid rgba(232,185,35,0.15)
   <!-- SUCCESS VIEW -->
   <div id="successView">
     <div class="success-icon">✅</div>
-    <div class="success-title">Order Confirmed!</div>
-    <div class="success-sub">Your Avengers gear is on its way, hero.<br>Check your email for details.</div>
-    <div class="order-id-box" id="orderIdBox"></div>
+    <div class="success-title">Purchase Complete!</div>
+    <div class="success-sub">Your Avengers gear is on its way, hero.<br>A confirmation has been saved to your order history.</div>
+    <div class="receipt-box" id="receiptBox"></div>
     <a href="merch.html" class="home-btn">← Continue Shopping</a>
   </div>
 
@@ -272,12 +277,16 @@ async function placeOrder() {
 
   btn.disabled = true; btn.textContent = 'Placing Order...';
 
+  const orderTotal = getTotal();
+
+  // Simulated/dummy purchase: no real payment processor is charged.
+  // transaction_id is generated server-side by Supabase (see orders_txn_seq).
   const { data, error } = await db.from('orders').insert([{
     customer_name:  firstName + ' ' + lastName,
     customer_email: email,
     items: cart.map(i => ({ product_id: i.id, name: i.name, price: i.price, qty: i.qty })),
-    total: getTotal(),
-    status: 'pending'
+    total: orderTotal,
+    status: 'paid'
   }]).select();
 
   btn.disabled = false; btn.textContent = '⚡ Place Order';
@@ -288,8 +297,18 @@ async function placeOrder() {
     errorEl.classList.add('show'); return;
   }
 
-  const orderId = data?.[0]?.id || 'N/A';
-  document.getElementById('orderIdBox').textContent = 'Order ID: ' + orderId;
+  const order = data?.[0] || {};
+  const transactionId = order.transaction_id || 'N/A';
+  const paidAt = order.created_at
+    ? new Date(order.created_at).toLocaleString()
+    : new Date().toLocaleString();
+
+  document.getElementById('receiptBox').innerHTML = `
+    <div class="receipt-row"><span class="receipt-label">Transaction ID</span><span class="receipt-val txn">${transactionId}</span></div>
+    <div class="receipt-row"><span class="receipt-label">Amount Paid</span><span class="receipt-val">$${orderTotal.toFixed(2)}</span></div>
+    <div class="receipt-row"><span class="receipt-label">Date</span><span class="receipt-val">${paidAt}</span></div>
+    <div class="receipt-row"><span class="receipt-label">Status</span><span class="receipt-val" style="color:#4ade80">Paid</span></div>
+  `;
   document.getElementById('checkoutView').style.display = 'none';
   document.getElementById('successView').style.display = 'block';
 
