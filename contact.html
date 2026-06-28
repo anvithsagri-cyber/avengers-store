@@ -53,20 +53,10 @@ textarea.form-input{resize:vertical;min-height:130px}
 .error-msg{color:#ff6b6b;font-size:13px;margin-bottom:10px;display:none;letter-spacing:0.5px}
 .error-msg.show{display:block}
 
-/* Success overlay */
-.success-overlay{display:none;text-align:center;padding:2rem 1rem}
-.success-overlay.show{display:block}
-.success-icon{font-size:64px;margin-bottom:1rem;animation:pop 0.4s ease}
-.success-title{font-family:'Bebas Neue',sans-serif;font-size:40px;letter-spacing:3px;color:var(--gold);margin-bottom:0.5rem}
-.success-sub{color:var(--muted);font-size:15px;line-height:1.7;margin-bottom:1.5rem}
-.back-btn{display:inline-block;padding:11px 28px;background:transparent;border:1px solid var(--gold);color:var(--gold);font-family:'Rajdhani',sans-serif;font-size:13px;font-weight:700;letter-spacing:2px;text-transform:uppercase;cursor:pointer;transition:all 0.2s;text-decoration:none}
-.back-btn:hover{background:rgba(232,185,35,0.1)}
-
 footer{text-align:center;padding:2rem;border-top:1px solid rgba(232,185,35,0.15);background:#050810}
 .footer-text{font-size:12px;color:var(--muted);letter-spacing:2px}
 
 @keyframes fadeUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
-@keyframes pop{0%{transform:scale(0.5)}70%{transform:scale(1.15)}100%{transform:scale(1)}}
 </style>
 </head>
 <body>
@@ -139,14 +129,6 @@ footer{text-align:center;padding:2rem;border-top:1px solid rgba(232,185,35,0.15)
         <div class="error-msg" id="errorMsg"></div>
         <button class="submit-btn" id="submitBtn" onclick="sendMessage()">⚡ Send Message</button>
       </div>
-
-      <!-- SUCCESS -->
-      <div class="success-overlay" id="successOverlay">
-        <div class="success-icon">✅</div>
-        <div class="success-title">Message Sent!</div>
-        <div class="success-sub">Thanks for reaching out, hero.<br>We'll get back to you within 24 hours.</div>
-        <a href="index.html" class="back-btn">← Back to Home</a>
-      </div>
     </div>
 
   </div>
@@ -200,8 +182,7 @@ async function sendMessage() {
     return;
   }
 
-  document.getElementById('contactForm').style.display = 'none';
-  document.getElementById('successOverlay').classList.add('show');
+  window.location.href = 'thank-you.html?name=' + encodeURIComponent(firstName);
 }
 </script>
 </body>
